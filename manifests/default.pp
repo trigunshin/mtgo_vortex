@@ -6,25 +6,28 @@ import "redis.pp"
 
 ########################################################################
 
-file { '/home/vagrant/info-sequences':
-    ensure => 'directory',
-    mode => 0775,
-    owner => 'vagrant',
-    group => 'vagrant',
+package { 'argparse':
+    ensure => 'installed',
+    provider => 'pip',
+    require => Package['python-pip'],
+}
+package { 'pymongo':
+    ensure => 'installed',
+    provider => 'pip',
+    require => Package['python-pip'],
 }
 
 ########################################################################
 
 $install_dir = '/home/vagrant'
 
-#exec { "info-sequences-checkout":
-#    cwd => $install_dir,
-#    command => '/usr/bin/git clone git@github.com:trigunshin/info-sequences.git',
-#    creates => "${install_dir}/info-sequences",
-#    unless => '/usr/bin/test -d info-sequences',
-#    user => 'vagrant',
-#    require => [Package['git-core']],
-#}
+cron { data_fetch:
+  command => "/usr/bin/python $install_dir/mtgo_vortex/prices.py",
+  user    => vagrant,
+  hour    => '*',
+  minute  => 38,
+  require => [Package['pymongo'],Package['argparse'],Package['mongodb-10gen']]
+}
 
 file { '/home/vagrant/.screenrc':
    ensure => 'link',
@@ -32,23 +35,22 @@ file { '/home/vagrant/.screenrc':
 }
 
 exec { "load-screen":
-    cwd => "$install_dir/info-sequences",
-    command => '/usr/bin/screen -AmdS infoseq -t appjs bash',
+    cwd => "$install_dir/mtgo_vortex",
+    command => '/usr/bin/screen -AmdS mtgo -t appjs bash',
     user => 'vagrant',
-    unless => "/usr/bin/test 1 '!=' `ps aux|grep screen|wc -l`",
+    unless => "/usr/bin/test `screen -list | grep mtgo | wc -l` '-gt' 0",
     require => [
         File['/home/vagrant/.screenrc'],
         Package['screen'],
         Class['nodejs'],
-        #Exec['info-sequences-checkout'],
     ],
 }
 
-exec { "run-app":
-    cwd => "$install_dir/info-sequences",
-    command => "/usr/bin/screen -S infoseq -p appjs -X stuff \'node app.js\r\'",
-    user => 'vagrant',
-    require => [
-        Exec['load-screen'],
-    ],
-}
+#exec { "run-app":
+#    cwd => "$install_dir/mtgo_vortex",
+#    command => "/usr/bin/screen -S mtgo -p appjs -X stuff \'node app.js\r\'",
+#    user => 'vagrant',
+#    require => [
+#        Exec['load-screen'],
+#    ],
+#}

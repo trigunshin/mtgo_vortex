@@ -29,3 +29,6 @@ package { 'curl':
 package { 'libxslt1-dev':
     ensure => 'installed'
 }
+package { 'python-pip':
+    ensure => 'installed'
+}
