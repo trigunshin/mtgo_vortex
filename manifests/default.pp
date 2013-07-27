@@ -1,7 +1,7 @@
 import "ssh.pp"
 import "system-packages.pp"
 import "mongo.pp"
-import "node.pp"
+#import "node.pp"
 import "redis.pp"
 
 ########################################################################
@@ -42,15 +42,14 @@ exec { "load-screen":
     require => [
         File['/home/vagrant/.screenrc'],
         Package['screen'],
-        Class['nodejs'],
     ],
 }
-
-#exec { "run-app":
-#    cwd => "$install_dir/mtgo_vortex",
-#    command => "/usr/bin/screen -S mtgo -p appjs -X stuff \'node app.js\r\'",
-#    user => 'vagrant',
-#    require => [
-#        Exec['load-screen'],
-#    ],
-#}
+exec { "first-price-fetch":
+    cwd => "$install_dir/mtgo_vortex",
+    command => "/usr/bin/screen -S mtgo -p appjs -X stuff \'python prices.py\r\'",
+    user => 'vagrant',
+    require => [
+        Exec['load-screen'],
+        Class['data_fetch'],
+    ],
+}
