@@ -186,7 +186,6 @@ def do_remote_update():
         lines = get_remote_file_lines(path)
         data = get_card_data(lines[7:], parse_date)
         dd = list(data)
-        print [d for d in dd if d['card_name'].endswith('therling')]
         upload_data(mtg_db, data, parse_date)
     return True
 
