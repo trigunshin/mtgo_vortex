@@ -1,11 +1,62 @@
 from codecs import open
 import httplib
+from urllib2 import urlopen
 from datetime import datetime
 import json
 import re
 from itertools import groupby
 from functools import partial
-import pymongo
+from pymongo import MongoClient
+
+######## some internet hack i need to put into a lib and import
+# from http://effbot.org/zone/unicode-convert.htm
+import unicodedata, sys
+
+CHAR_REPLACEMENT = {
+    # latin-1 characters that don't have a unicode decomposition
+    0xc6: u"AE", # LATIN CAPITAL LETTER AE
+    0xd0: u"D",  # LATIN CAPITAL LETTER ETH
+    0xd8: u"OE", # LATIN CAPITAL LETTER O WITH STROKE
+    0xde: u"Th", # LATIN CAPITAL LETTER THORN
+    0xdf: u"ss", # LATIN SMALL LETTER SHARP S
+    0xe6: u"ae", # LATIN SMALL LETTER AE
+    0xf0: u"d",  # LATIN SMALL LETTER ETH
+    0xf8: u"oe", # LATIN SMALL LETTER O WITH STROKE
+    0xfe: u"th", # LATIN SMALL LETTER THORN
+    }
+
+##
+# Translation dictionary.  Translation entries are added to this
+# dictionary as needed.
+class unaccented_map(dict):
+    ##
+    # Maps a unicode character code (the key) to a replacement code
+    # (either a character code or a unicode string).
+
+    def mapchar(self, key):
+        ch = self.get(key)
+        if ch is not None:
+            return ch
+        de = unicodedata.decomposition(unichr(key))
+        if de:
+            try:
+                ch = int(de.split(None, 1)[0], 16)
+            except (IndexError, ValueError):
+                ch = key
+        else:
+            ch = CHAR_REPLACEMENT.get(key, key)
+        self[key] = ch
+        return ch
+
+    if sys.version >= "2.5":
+        # use __missing__ where available
+        __missing__ = mapchar
+    else:
+        # otherwise, use standard __getitem__ hook (this is slower,
+        # since it's called for each character)
+        __getitem__ = mapchar
+unicode_translation_map = unaccented_map()
+######## end horrible unicode hack from the internet
 
 name_set_pattern = "(?P<card_name>.*)\s\[(?P<set_code>\w*)\]"
 name_set_regex = regex = re.compile(name_set_pattern)
@@ -37,7 +88,7 @@ def update_with_type(data_dict):
     return data_dict
 def parse_name_set(raw_name):
     ret = name_set_regex.search(raw_name).groupdict()
-    name = ret['card_name']
+    ret['card_name'] = ret['card_name'].decode('unicode-escape').translate(unicode_translation_map).encode("ascii", "ignore")
     ret.update(update_with_type(ret))
     return ret
 def line_to_arr(line):
@@ -64,16 +115,20 @@ arr_cases = {
     3:case_not_buying,
 }
 def parse_quantity(data_obj):
-    botstring = data_obj['bots']
     qty = {'total': 0}
-    for bot in botstring.split(' '):
-        spl = bot.split('[')
-        bot_name = spl[0]
-        bot_quantity = spl[1].split(']')[0]
-        qty[bot_name] = int(bot_quantity)
-        qty['total'] += int(bot_quantity)
+    try:
+        botstring = data_obj['bots']
+        for bot in botstring.split(' '):
+            spl = bot.split('[')
+            bot_name = spl[0]
+            bot_quantity = spl[1].split(']')[0]
+            qty[bot_name] = int(bot_quantity)
+            qty['total'] += int(bot_quantity)
+            del data_obj['bots']
+    except KeyError,e:
+        # if bots field doesn't exist there's no stock
+        pass
     data_obj['qty'] = qty
-    del data_obj['bots']
     return data_obj
 def data_dict_from_arr(arr, date=None):
     arr_len = len(arr)
@@ -89,10 +144,8 @@ def data_dict_from_arr(arr, date=None):
     return ret
 def pprint_card(card):
     print "%(card_name)s %(sell)s %(set_code)s" % card
-def get_remote_file_lines(base_url, url_path):
-    conn = httplib.HTTPConnection(base_url)
-    conn.request('GET', url_path)
-    response = conn.getresponse()
+def get_remote_file_lines(url):
+    response = urlopen(url)
     content = response.read().split('\n')
     return content
 def get_card_data(line_array, data_date):
@@ -106,11 +159,12 @@ def upload_data(db, data, data_date,
                 price_name='prices',
                 dl_name='downloads'):
     # upload results first
-    db[price_name].insert(data_dicts)
+
+    db[price_name].insert(data)
     # any errors will skip this step; query for this first to ensure valid runs
     db[dl_name].insert({
                         'vendor':vendor,
-                        'date': download_date,
+                        'date': data_date,
                         'type': price_name
                         })
     return
@@ -123,17 +177,18 @@ def get_local_data_file_lines(file_name="prices_0.txt"):
 def do_remote_update():
     client = MongoClient('localhost', 27017)
     mtg_db = client['mtgo']
-    lines = get_remote_file_lines('http://supernovabots.com', '/prices_0.txt')
-    data = get_card_data(lines[7:])
-    upload_to_db(mtg_db, data, datetime.utcnow())
+    files = [
+             'http://www.supernovabots.com/prices_0.txt',
+             'http://www.supernovabots.com/prices_3.txt',
+             'http://www.supernovabots.com/prices_6.txt']
+    parse_date = datetime.utcnow()
+    for path in files:
+        lines = get_remote_file_lines(path)
+        data = get_card_data(lines[7:], parse_date)
+        dd = list(data)
+        print [d for d in dd if d['card_name'].endswith('therling')]
+        upload_data(mtg_db, data, parse_date)
     return True
-
-
-#client = MongoClient('localhost', 27017)
-#mtg_db = client['mtgo']
-#set_data = mtg_db['set_data']
-#downloads = mtg_db['downloads']
-#prices = mtg_db['prices']
 
 # TODO implement AllSets storage/retrieval in/from the db
 # TODO figure out if the above should be a single doc or set by set
@@ -185,7 +240,8 @@ def price_recent_mythics():
     """
     return
 
-price_recent_mythics()
+#price_recent_mythics()
+do_remote_update()
 """
 lines = get_local_data_file_lines()
 data = get_card_data(lines[7:], datetime.utcnow())
