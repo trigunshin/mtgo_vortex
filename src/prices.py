@@ -165,7 +165,7 @@ def upload_data(db, data, data_date,
     db[dl_name].insert({
                         'vendor':vendor,
                         'date': data_date,
-                        'type': price_name
+                        'type': data[0]['type']
                         })
     return
 def get_local_data_file_lines(file_name="prices_0.txt"):
