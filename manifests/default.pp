@@ -3,6 +3,7 @@ import "system-packages.pp"
 import "mongo.pp"
 #import "node.pp"
 import "redis.pp"
+include java
 
 ########################################################################
 
@@ -50,6 +51,6 @@ exec { "first-price-fetch":
     user => 'vagrant',
     require => [
         Exec['load-screen'],
-        Class['data_fetch'],
+        Cron['data_fetch'],
     ],
 }
