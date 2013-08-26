@@ -67,7 +67,7 @@ sorted_vals = sorted(pdict.itervalues(), key=lambda x: x['set'])
 grouped = groupby(sorted_vals, lambda x: x['set'])
 results = []
 for setcode, values in grouped:
-    print setcode
+    #print setcode
     for value in values:
         cur = value['current']
         pri = value['prior']
@@ -86,4 +86,4 @@ for setcode, values in grouped:
                 'sort_val': max(buydiff, selldiff)
             })
 for result in sorted(results, key=lambda x: x['sort_val'], reverse=True):
-    print result['toString']
+    print result['sort_val'], result['toString']
