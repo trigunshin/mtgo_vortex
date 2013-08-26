@@ -25,8 +25,8 @@ $install_dir = '/home/vagrant'
 cron { data_fetch:
   command => "/usr/bin/python $install_dir/mtgo_vortex/prices.py",
   user    => vagrant,
-  hour    => '*',
-  minute  => 38,
+  hour    => [1, 13],
+  minute  => 0,
   require => [Package['pymongo'],Package['argparse'],Package['mongodb-10gen']]
 }
 
