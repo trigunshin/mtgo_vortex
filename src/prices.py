@@ -1,5 +1,5 @@
 from codecs import open
-import httplib
+
 from urllib2 import urlopen
 from datetime import datetime
 import json
@@ -76,20 +76,15 @@ def upload_set_data(db, data, coll_name='set_data'):
     return db[coll_name].insert(data)
 
 # functions for supernova parsing
-def update_with_type(data_dict):
+def update_with_type(data_dict, data_type):
     name = data_dict['card_name']
+    data_dict['type'] = data_type
     if name.startswith("Foil "):
         data_dict['card_name'] = name[5:]
-        data_dict['type'] = 'foil'
-    elif name.endswith(" BOOSTER"):
-        data_dict['type'] = "booster"
-    else:
-        data_dict['type'] = 'nonfoil'
     return data_dict
 def parse_name_set(raw_name):
     ret = name_set_regex.search(raw_name).groupdict()
     ret['card_name'] = ret['card_name'].decode('unicode-escape').translate(unicode_translation_map).encode("ascii", "ignore")
-    ret.update(update_with_type(ret))
     return ret
 def line_to_arr(line):
     return filter(None, re.split(r'\s{2,}', line))
@@ -125,21 +120,22 @@ def parse_quantity(data_obj):
             qty[bot_name] = int(bot_quantity)
             qty['total'] += int(bot_quantity)
             del data_obj['bots']
-    except KeyError,e:
+    except KeyError:
         # if bots field doesn't exist there's no stock
         pass
     data_obj['qty'] = qty
     return data_obj
-def data_dict_from_arr(arr, date=None):
+def data_dict_from_arr(arr, data_type, date=None):
     arr_len = len(arr)
     try:
         ret = arr_cases[arr_len](arr)
+        ret.update(update_with_type(ret, data_type))
         ret = parse_quantity(ret)
         if date is not None:
             ret['date'] = date
-    except KeyError,e:
+    except KeyError:
         ret = None
-    except AttributeError,e:
+    except AttributeError:
         ret = None
     return ret
 def pprint_card(card):
@@ -148,13 +144,14 @@ def get_remote_file_lines(url):
     response = urlopen(url)
     content = response.read().split('\n')
     return content
-def get_card_data(line_array, data_date):
+def get_card_data(line_array, data_date, data_type):
     data_dicts = (data_dict_from_arr(line_to_arr(cur_line),
-                                     data_date)
+                                     data_type,
+                                     date=data_date)
                   for cur_line in line_array if cur_line)
     # filter out empty cases and return generator
     return filter(None, data_dicts)
-def upload_data(db, data, data_date,
+def upload_data(db, data, data_date, data_type,
                 vendor='supernova',
                 price_name='prices',
                 dl_name='downloads'):
@@ -165,7 +162,7 @@ def upload_data(db, data, data_date,
     db[dl_name].insert({
                         'vendor':vendor,
                         'date': data_date,
-                        'type': data[0]['type']
+                        'type': data_type
                         })
     return
 def get_local_data_file_lines(file_name="prices_0.txt"):
@@ -178,15 +175,15 @@ def do_remote_update():
     client = MongoClient('localhost', 27017)
     mtg_db = client['mtgo']
     files = [
-             'http://www.supernovabots.com/prices_0.txt',
-             'http://www.supernovabots.com/prices_3.txt',
-             'http://www.supernovabots.com/prices_6.txt']
+             ('http://www.supernovabots.com/prices_0.txt', 'nonfoil'),
+             ('http://www.supernovabots.com/prices_3.txt', 'foil'),
+             ('http://www.supernovabots.com/prices_6.txt', 'pack')]
     parse_date = datetime.utcnow()
-    for path in files:
+    for path, data_type in files:
         lines = get_remote_file_lines(path)
-        data = get_card_data(lines[7:], parse_date)
-        dd = list(data)
-        upload_data(mtg_db, data, parse_date)
+        data = get_card_data(lines[7:], parse_date, data_type)
+        #dd = list(data)
+        upload_data(mtg_db, data, parse_date, data_type)
     return True
 
 # TODO implement AllSets storage/retrieval in/from the db
@@ -207,16 +204,18 @@ def isMythic(set_info, supernova_card):
         # take first name of a split card, or whole name of a normal card
         card_name = supernova_card['card_name'].split('/')[0]
 
-        rr=set_info[card_set][card_name]['rarity']
         ret = (set_info[card_set][card_name]['rarity'] == 'Mythic Rare')
+        """
+        rr=set_info[card_set][card_name]['rarity']
         #print card_name, rr, ret
-    except KeyError,e:
+        #"""
+    except KeyError:
         # unknown sets
         ret = False
     return ret
 def price_recent_mythics():
     lines = get_local_data_file_lines()
-    data = get_card_data(lines[7:], datetime.utcnow())
+    data = get_card_data(lines[7:], datetime.utcnow(), 'nonfoil')
 
     keys,groups = get_set_groups(data)
 
