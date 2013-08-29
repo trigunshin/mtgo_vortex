@@ -25,9 +25,17 @@ $install_dir = '/home/vagrant'
 cron { data_fetch:
   command => "/usr/bin/python $install_dir/mtgo_vortex/prices.py",
   user    => vagrant,
-  hour    => [1, 13],
+  hour    => [1],
   minute  => 0,
   require => [Package['pymongo'],Package['argparse'],Package['mongodb-10gen']]
+}
+
+cron { report_send:
+  command => "/usr/bin/python $install_dir/mtgo_vortex/recent.py",
+  user    => vagrant,
+  hour    => [1],
+  minute  => 30,
+  require => [Cron['data_fetch']]
 }
 
 file { '/home/vagrant/.screenrc':
