@@ -40,12 +40,10 @@ def get_data(price_type, c_dl, c_prices):
     current_date = result['date']
     td = datetime.timedelta(days=1)
     prior_date = current_date - td
-
     # find recent date closest to 24h ago
     prior_dl = c_dl.find({'date':{'$gte': prior_date},
                           'type':price_type}).sort([('date', 1)])[0]
     prior_date = prior_dl['date']
-
     # find price data for current and prior dates to compare values
     current_data = c_prices.find({'date': current_date,
                                   'type': price_type}).sort([('set_code', 1),
@@ -53,7 +51,6 @@ def get_data(price_type, c_dl, c_prices):
     prior_data = c_prices.find({'date': prior_date,
                                 'type': price_type}).sort([('set_code', 1),
                                                      ('card_name', 1)])
-    # TODO replace reduces with dict comp
     cur_dict = reduce(partial(reduce_prices, sub_field_name='current'),
                    current_data,
                    {})
@@ -103,6 +100,61 @@ def get_report(report_data, sort_field, threshold=.1):
                 })
     return {'data': sorted(results, key=lambda x: x['sort_val'], reverse=True), 'sort': sort_field}
 
+def get_report_filename(report):
+    return ''.join(['itch_', report['type'], '_', report['sort'], '.txt'])
+
+# XXX percentages still derp
+# TODO for an empty report this will probably explode; most likely the 'packs' report
+def prepare_report_files(report):
+    cur_report = {}
+    cur_report_data = []
+    cur_report_type = report['data'][0]['vals']['current']['type']
+    cur_report_data.append(''.join([
+        'type:', cur_report_type, '\tsort:', report['sort']
+    ]))
+    for result in report['data']:
+        cur_report_data.append(''.join([result['toString']]))
+
+    cur_report['data'] = cur_report_data
+    cur_report['sort'] = report['sort']
+    cur_report['type'] = cur_report_type
+
+    return cur_report
+
+import smtplib
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email import Encoders
+
+def _get_email_subject():
+    return ' '.join(['Testing from magicItch for ', datetime.date.today().isoformat()])
+
+def mail(gmail_user, gmail_pwd, to, subject, text, reports):
+    msg = MIMEMultipart()
+    msg['From'] = gmail_user
+    msg['To'] = gmail_user
+    msg['Subject'] = subject
+    
+    msg.attach(MIMEText(text)) 
+    
+    for report in reports:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload('\n'.join(report['data']))
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition',
+                'attachment; filename="%s"' % get_report_filename(report))
+        msg.attach(part)
+    
+    mailServer = smtplib.SMTP("smtp.gmail.com", 587)
+    mailServer.ehlo()
+    mailServer.starttls()
+    mailServer.ehlo()
+    mailServer.login(gmail_user, gmail_pwd)
+    mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
+    mailServer.close()
+
+
 client = MongoClient('localhost', 27017)
 mtg_db = client['mtgo']
 c_dl = mtg_db['downloads']
@@ -113,50 +165,5 @@ types = ['nonfoil', 'foil', 'pack']
 data_seqs = (get_data(cur_type, c_dl, c_prices) for cur_type in types[:1])
 reports = (get_report(data_seq, sort_field) for data_seq, sort_field in product(data_seqs, sorts))
 
-# XXX percentages still derp
-report_file_data = []
-for report in reports:
-    #print 'type:', report['data'][0]['vals']['current']['type'], '\tsort:', report['sort']
-    report_file_data.append(''.join([
-        'type:', report['data'][0]['vals']['current']['type'], '\tsort:', report['sort']
-    ]))
-    for result in report['data']:
-        #print result['sort_val'], result['toString']
-        report_file_data.append(''.join([result['toString']]))
-
-# email sending, copied the quick hack over
-import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email import Encoders
-def mail(gmail_user, gmail_pwd, to, subject, text, attach):
-    msg = MIMEMultipart()
-    
-    print gmail_user
-    msg['From'] = gmail_user
-    realToString=''
-    for s in to:
-        realToString = realToString + s + ","
-    #    print realToString,to, [gmail_user]+[]+to
-    msg['To'] = gmail_user
-    #msg['To'] = realToString
-    msg['Subject'] = subject
-    
-    msg.attach(MIMEText(text)) 
-    
-    part = MIMEBase('application', 'octet-stream')
-    part.set_payload('\n'.join(report_file_data))
-    Encoders.encode_base64(part)
-    part.add_header('Content-Disposition',
-            'attachment; filename="%s"' % 'itch_mtgo_report.txt')
-    msg.attach(part)
-    
-    mailServer = smtplib.SMTP("smtp.gmail.com", 587)
-    mailServer.ehlo()
-    mailServer.starttls()
-    mailServer.ehlo()
-    mailServer.login(gmail_user, gmail_pwd)
-    mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
-    # Should be mailServer.quit(), but that crashes...
-    mailServer.close()
+files = (prepare_report_files(cur) for cur in reports)
+subj = _get_email_subject()
