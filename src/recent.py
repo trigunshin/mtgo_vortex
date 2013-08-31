@@ -70,8 +70,9 @@ def get_report(report_data, sort_field, threshold=.1):
     results = []
     for setcode, values in grouped:
         for value in values:
-            cur = value['current']
-            pri = value['prior']
+            # defaults should possibly be set in get_data's reducers instead
+            cur = value.get('current', {'buy': 0, 'sell': 0,' qty': {'total': 0}})
+            pri = value.get('prior', {'buy': 0, 'sell': 0, 'qty': {'total': 0}})
 
             # XXX there has to be a better way than doing an extra calc
             field_diff = get_pct_diff(pri.get(sort_field, '0'),
@@ -108,6 +109,8 @@ def get_report_filename(report):
 def prepare_report_files(report):
     cur_report = {}
     cur_report_data = []
+    if len(report['data'] == 0):
+        return None
     cur_report_type = report['data'][0]['vals']['current']['type']
     cur_report_data.append(''.join([
         'type:', cur_report_type, '\tsort:', report['sort']
@@ -139,6 +142,7 @@ def mail(gmail_user, gmail_pwd, to, subject, text, reports):
     msg.attach(MIMEText(text)) 
     
     for report in reports:
+        if report is None: continue
         part = MIMEBase('application', 'octet-stream')
         part.set_payload('\n'.join(report['data']))
         Encoders.encode_base64(part)
