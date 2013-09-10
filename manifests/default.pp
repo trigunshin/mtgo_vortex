@@ -17,6 +17,21 @@ package { 'pymongo':
     provider => 'pip',
     require => Package['python-pip'],
 }
+package { 'redis':
+    ensure => 'installed',
+    provider => 'pip',
+    require => Package['python-pip'],
+}
+package { 'flask':
+    ensure => 'installed',
+    provider => 'pip',
+    require => Package['python-pip'],
+}
+package { 'flask-bcrypt':
+    ensure => 'installed',
+    provider => 'pip',
+    require => [Package['python-pip'], Package['flask']],
+}
 
 ########################################################################
 
