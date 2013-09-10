@@ -12,16 +12,15 @@ Vagrant.configure("2") do |config|
                    "--cpus",   "3"
                    ]
     end
-    config.vm.provision :shell, :path => 'puppet-modules.sh'
-    
-    config.vm.provision :puppet do |puppet|
+    local.vm.provision :shell, :path => 'puppet-modules.sh'
+    local.vm.provision :puppet do |puppet|
         #puppet.options = '--verbose --debug'
         #puppet.manifest_file = 'node.pp'
     end
     # apt cache - skip bunch of downloads if ever need to recreate
-    config.vm.synced_folder 'apt-cache', '/var/cache/apt/archives'
-    config.vm.network :forwarded_port, guest: 5000, host: 5000
-    config.vm.synced_folder "src/", "/home/vagrant/mtgo_vortex"
+    local.vm.synced_folder 'apt-cache', '/var/cache/apt/archives'
+    local.vm.network :forwarded_port, guest: 5000, host: 5000
+    local.vm.synced_folder "src/", "/home/vagrant/mtgo_vortex"
   end
 
   config.vm.define :remotemtgovortex do |remotemtgovortex|
@@ -43,6 +42,6 @@ Vagrant.configure("2") do |config|
 
   # apt cache - skip bunch of downloads if ever need to recreate
   #config.vm.synced_folder 'apt-cache', '/var/cache/apt/archives'
-  config.vm.network :forwarded_port, guest: 5000, host: 5000
-  config.vm.synced_folder "src/", "/home/vagrant/mtgo_vortex"
+  #config.vm.network :forwarded_port, guest: 5000, host: 5000
+  #config.vm.synced_folder "src/", "/home/vagrant/mtgo_vortex"
 end
