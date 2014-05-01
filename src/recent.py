@@ -38,9 +38,10 @@ def get_data(price_type, c_dl, c_prices):
     result = c_dl.find({'type':price_type}).sort([('date', -1)])[0]
 
     current_date = result['date']
-    td = datetime.timedelta(days=1)
+    # don't set timedelta to exactly 24h, we don't want to miss by a few seconds
+    td = datetime.timedelta(days=1, hours=3)
     prior_date = current_date - td
-    # find recent date closest to 24h ago
+    # find recent date
     prior_dl = c_dl.find({'date':{'$gte': prior_date},
                           'type':price_type}).sort([('date', 1)])[0]
     prior_date = prior_dl['date']
@@ -70,35 +71,38 @@ def get_report(report_data, sort_field, threshold=.1):
     results = []
     for setcode, values in grouped:
         for value in values:
-            # defaults should possibly be set in get_data's reducers instead
-            cur = value.get('current', {'buy': 0, 'sell': 0,' qty': {'total': 0}})
-            pri = value.get('prior', {'buy': 0, 'sell': 0, 'qty': {'total': 0}})
+            try:
+                # defaults should possibly be set in get_data's reducers instead
+                cur = value.get('current', {'buy': 0, 'sell': 0,' qty': {'total': 0}})
+                pri = value.get('prior', {'buy': 0, 'sell': 0, 'qty': {'total': 0}})
 
-            # XXX there has to be a better way than doing an extra calc
-            field_diff = get_pct_diff(pri.get(sort_field, '0'),
-                                      cur.get(sort_field, '0'))
-            buydiff = get_pct_diff(pri.get('buy','0'),
-                                   cur.get('buy','0'))
-            selldiff = get_pct_diff(pri.get('sell','0'),
-                                    cur.get('sell','0'))
-            if abs(field_diff) > threshold:
-                buy_data = {
-                    'now': cur.get('buy','0'),
-                    'then': pri.get('buy', '0'),
-                    'diff': buydiff,
-                }
-                sell_data = {
-                    'now': cur.get('sell', '0'),
-                    'then': pri.get('sell', '0'),
-                    'diff': selldiff,
-                }
-                printme = toHumanString(cur['card_name'], cur['set_code'],
-                                        buy_data, sell_data)
-                results.append({
-                    'vals': value,
-                    'toString': printme,
-                    'sort_val': field_diff
-                })
+                # XXX there has to be a better way than doing an extra calc
+                field_diff = get_pct_diff(pri.get(sort_field, '0'),
+                                          cur.get(sort_field, '0'))
+                buydiff = get_pct_diff(pri.get('buy','0'),
+                                       cur.get('buy','0'))
+                selldiff = get_pct_diff(pri.get('sell','0'),
+                                        cur.get('sell','0'))
+                if abs(field_diff) > threshold:
+                    buy_data = {
+                        'now': cur.get('buy','0'),
+                        'then': pri.get('buy', '0'),
+                        'diff': buydiff,
+                    }
+                    sell_data = {
+                        'now': cur.get('sell', '0'),
+                        'then': pri.get('sell', '0'),
+                        'diff': selldiff,
+                    }
+                    printme = toHumanString(cur['card_name'], cur['set_code'],
+                                            buy_data, sell_data)
+                    results.append({
+                        'vals': value,
+                        'toString': printme,
+                        'sort_val': field_diff
+                    })
+            except KeyError:
+                continue
     return {'data': sorted(results, key=lambda x: x['sort_val'], reverse=True), 'sort': sort_field}
 
 def get_report_filename(report):
