@@ -139,21 +139,61 @@ var ALoginModel = Backbone.Model.extend({
     action_logout: 'Log out',
 });
 
+var Vendor = Backbone.Model.extned({
+    idAttribute: 'name',
+    urlRoot: '/api/vendor/',
+    schema: {
+        name: 'Text',
+    }
+});
+var Vendors = Backbone.Collection.extend({
+    model: Vendor,
+    url: '/api/vendor',
+});
+var VendorView = Backbone.Marionette.ItemView.extend({
+    initialize: function() {
+        this.listenTo(this.model, 'destroy', this.remove);
+    },
+    template: '#vendor-template',
+    tagName: 'li',
+    events: {
+        'click input.vendor__clickbox': 'updateVendorPref'
+    },
+    updateVendorPref: function() {
+        var self = this;
+        //this.model.doStuff;
+    }
+});
+var VendorsView  = Backbone.Marionette.CollectionView.extend({
+    template: "#vendor-list-template",
+    itemView: VendorView,
+    initialize: function(){}
+});
+var VendorsLayout = Backbone.Marionette.Layout.extend({
+    template: "#vendor-layout-template",
+    regions: {
+        vendor_list: "#vendor-list"
+    }
+});
+
+var renderVendorLayout = function(vendor_layout_view) {
+
+};
 ////////////////////
 //// actual app ////
 ////////////////////
 
 var MyApp = new Backbone.Marionette.Application();
 MyApp.addRegions({
-    group_layout: "#group_layout",
+    vendor_layout: "#vendor_layout",
     //group_add_modal: "#add_group",
     login_region: "#user_box"
-    //login_region: "#login_region"
 });
 MyApp.addInitializer(function(options){
     var signupView = new SignupView();
     MyApp.vent.on("login:success", function(user_model) {
         // TODO manage header bar links with a layout
+
     });
 
     MyApp.vent.on("logout:click", function(user_model) {

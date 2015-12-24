@@ -15,6 +15,8 @@ redis = StrictRedis(host=das_host, port=6379)
 client = MongoClient(das_host, 27017)
 db = client['mtgo']
 c_users = db['users']
+c_downloads = db['downloads']
+c_vendors = db['vendors']
 user_handler = Users(c_users)
 
 srv = Flask(__name__, static_folder='public', static_url_path='')
@@ -31,6 +33,13 @@ bcrypt = Bcrypt(srv)
 def index():
     #return render_template('index.html')
     return render_template('ceepee.html')
+
+@srv.route('/api/vendor')
+def get_vendors():
+    # #ihatecaching
+    return jsonify(result={
+        'vendors': [v['name'] for v in c_vendors.find()]
+    })
 
 @srv.route('/api/auth', methods=['POST'])
 def login():

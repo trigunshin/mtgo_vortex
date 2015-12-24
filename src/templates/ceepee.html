@@ -1,111 +1,111 @@
-<!DOCTYPE html><html><head><title>Express</title><link href="/stylesheets/bootstrap.min.css" rel="stylesheet" media="screen"><style>body {
-  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-}
-</style><style media="screen" type="text/css">.defaultText { width: 300px;}
-.defaultTextActive { color: #a1a1a1; font-style: italic;}
-</style><link href="/stylesheets/bootstrap-responsive.css" rel="stylesheet"><!-- HTML5 shim, for IE6-8 support of HTML5 elements--><!--[if lt IE 9]><script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]--></head><body><div class="navbar navbar-inverse navbar-fixed-top"><div class="navbar-inner"><div class="container"><a data-toggle="collapse" data-target=".nav-collapse" class="btn btn-navbar"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></a><a href="/" class="brand">InfoSeq</a><div class="nav-collapse collapse"><ul class="nav"><li><a href="/">home</a></li></ul></div><ul id="user_box" class="nav pull-right"></ul></div></div></div><script id="signup-template" type="text/template"><form id="submit_form" class='form-horizontal',method='post'>
-  <div class="signup-label span5 msg-success hide label label-success">Signed up!</div>
-  <div class="signup-label span5 error-bad-auth hide label label-warning">Username and/or password incorrect.</div>
-  <div class="signup-label span5 error-unknown hide label label-warning">EXPLAIN_ERROR_HERE</div>
-  <div class="control-group">
-    <label class="control-label" for="inputEmail">Email</label>
-    <div class="controls">
-      <input type="email" id="inputEmail" name="user[email]" placeholder="Email" required>
-    </div>
-  </div>
-  <div class="control-group">
-    <label class="control-label" for="inputPassword">Password</label>
-    <div class="controls">
-      <input type="password" id="inputPassword" name="user[pass]" placeholder="Password" required>
-    </div>
-  </div>
-  <div class="control-group">
-    <label class="control-label" for="inputPassword1">Confirm Password</label>
-    <div class="controls">
-      <input type="password" id="inputPassword1" name="user[pass1]" placeholder="Confirm Password" required>
-    </div>
-  </div>
-  
-  <div class="control-group">
-    <div class="controls">
-      <!--
+<html>
+    <head>
+        <title></title>
+    </head>
+    <body>
+        <div class="navbar navbar-inverse navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a data-toggle="collapse" data-target=".nav-collapse" class="btn btn-navbar"></a><a href="/" class="brand">InfoSeq</a>
+                    <div class="nav-collapse collapse">
+                        <ul class="nav">
+                            <li>
+                                <a href="/">home</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <ul id="user_box" class="nav pull-right"></ul>
+                </div>
+            </div>
+        </div><script id="signup-template" type="text/template">
+<form id="submit_form" class='form-horizontal',method='post'>
+        <div class="signup-label span5 msg-success hide label label-success">Signed up!</div>
+        <div class="signup-label span5 error-bad-auth hide label label-warning">Username and/or password incorrect.</div>
+        <div class="signup-label span5 error-unknown hide label label-warning">EXPLAIN_ERROR_HERE</div>
+        <div class="control-group">
+        <label class="control-label" for="inputEmail">Email</label>
+        <div class="controls">
+        <input type="email" id="inputEmail" name="user[email]" placeholder="Email" required>
+        </div>
+        </div>
+        <div class="control-group">
+        <label class="control-label" for="inputPassword">Password</label>
+        <div class="controls">
+        <input type="password" id="inputPassword" name="user[pass]" placeholder="Password" required>
+        </div>
+        </div>
+        <div class="control-group">
+        <label class="control-label" for="inputPassword1">Confirm Password</label>
+        <div class="controls">
+        <input type="password" id="inputPassword1" name="user[pass1]" placeholder="Confirm Password" required>
+        </div>
+        </div>
+
+        <div class="control-group">
+        <div class="controls">
+        <!--
         <label class="checkbox">
         <input type="checkbox"> Remember me
         </label>
-      -->
-      <button type="submit" class="btn">Sign in</button>
-    </div>
-  </div>
-</form></script><script id="logged-in-template" type="text/template"><p class="navbar-text">Welcome, <%= name%>&nbsp;
-  <a id="logout" class="btn" href="/logout">Logout</a>
-</p></script><script id="login-template" type="text/template"><a href="#" data-toggle="dropdown" class="dropdown-toggle"><%- action_name %></a>
-<div class='dropdown-menu'>
-  <div class="login-label span4 msg-success hide label label-success">You are now logged in.</div>
-  <div class="login-label span4 error-bad-auth hide label label-warning">Username and/or password incorrect.</div>
-  <div class="login-label span4 error-unknown hide label label-warning"><%- stateDetails %></div>
-  <br class="span4">
-  
-  <p id="user-hail" class="navbar-text hide">Welcome!&nbsp;
-    <a id="logout" class="btn" href="/logout">Logout</a>
-  </p>
-  
-  <form id="login" action="#" method="post">
-  <div class="control-group">
-    <label class="control-label" for="inputEmail">Email</label>
-    <div class="controls">
-      <input type="email" id="inputEmail" name="email" class="span4" placeholder="Email" value="<%- email %>" required>
-    </div>
-  </div>
-  <div class="control-group">
-    <label class="control-label" for="inputPassword">Password</label>
-    <div class="controls">
-      <input type="password" id="inputPassword" class="span4" name="password" placeholder="Password" value="<%- password %>" required>
-    </div>
-  </div>
-  
-  <div class="control-group">
-    <div class="controls">
-      <input type="submit" class="btn" value="Log In">
-    </div>
-  </div>
-  </form>
-</div>
-</script><script type="text/template" id="group-modal-template"><a href="#createGroupModal" role="button" class="btn" data-toggle="modal">Add Group</a>
-<div id="createGroupModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="formModalLabel" aria-hidden="true">
-  <div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-    <h3 id="formModalLabel">Create new group</h3>
-  </div>
-  <div id="group-modal-form" class="modal-body"></div>
-  <div class="modal-footer">
-    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-    <button id="group-add-modal" class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Save changes</button>
-  </div>
-</div></script><script type="text/template" id="bookmark-modal-template"><a href="#createBookmarkModal-<%= group_id %>" role="button" class="btn" data-toggle="modal">Add Bookmark</a>
-<div id="createBookmarkModal-<%= group_id %>" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="formModalLabel" aria-hidden="true">
-  <div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-    <h3 id="formModalLabel">Create new Bookmark</h3>
-  </div>
-  <div id="bookmark-modal-form-<%= group_id %>" class="modal-body"></div>
-  <div class="modal-footer">
-    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-    <button id="bookmark-add-modal" class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Save Bookmark</button>
-  </div>
-</div>
-</script><script type="text/template" id="bookmark-layout-template"><div id="bookmark-add-modal"></div>
-<div id="bookmark-list"></div></script><script type="text/template" id="bookmark-template"><div class="row">
-  <div class="span1"></div>
-  <a class="span6" href="<%= url %>"><%= url %></a>
-  <span class='btn btn-small btn-danger bookmark__delete'>delete</span>
-</div>
-</script><script type="text/template" id="group-info-template"><a class="span4 accordion-toggle collapsed" data-toggle="collapse" data-parent="#groupList" href="#group<%= _id %>"><%= name %></a>
-<span id="group_remove" class="offset2 btn btn-small btn-danger">Remove Group</span>
-</script><script type="text/template" id="groups-layout-template"><br>
-<div id="group-info-view" class="accordion-heading row"></div>
-<div id="group<%= _id %>" class="accordion-body collapse" style="height: 0px;">
-  <div class="accordion-inner">
-    <p><%= description %>
-    <ul id="group-bookmarks" class="unstyled"></ul>
-  </div>
-</div></script><div class="container"><div id="login_region"></div><div id="add_group"></div><div id="group_layout"></div></div><script type="text/javascript" src="js/underscore-min.js"></script><script type="text/javascript" src="js/jquery-2.0.0.min.js"></script><script type="text/javascript" src="js/json2.js"></script><script type="text/javascript" src="js/backbone-min.js"></script><script type="text/javascript" src="js/backbone-forms.min.js"></script><script type="text/javascript" src="js/backbone-forms-list.min.js"></script><script type="text/javascript" src="js/backbone-forms-bootstrap.js"></script><script type="text/javascript" src="js/backbone-marionette.min.js"></script><script type="text/javascript" src="js/bootstrap.min.js"></script><script type="text/javascript" src="js/marionnette-demo.js"></script></body></html>
+        -->
+        <button type="submit" class="btn">Sign in</button>
+        </div>
+        </div>
+        </form>
+        </script><script id="logged-in-template" type="text/template">
+<p class="navbar-text">Welcome, <%= name%>&nbsp;
+        <a id="logout" class="btn" href="/logout">Logout</a>
+        </p>
+        </script><script id="login-template" type="text/template">
+<a href="#" data-toggle="dropdown" class="dropdown-toggle"><%- action_name %></a>
+        <div class='dropdown-menu'>
+        <div class="login-label span4 msg-success hide label label-success">You are now logged in.</div>
+        <div class="login-label span4 error-bad-auth hide label label-warning">Username and/or password incorrect.</div>
+        <div class="login-label span4 error-unknown hide label label-warning"><%- stateDetails %></div>
+        <br class="span4">
+
+        <p id="user-hail" class="navbar-text hide">Welcome!&nbsp;
+        <a id="logout2" class="btn" href="/logout">Logout</a>
+        </p>
+
+        <form id="login" action="#" method="post">
+        <div class="control-group">
+        <label class="control-label" for="inputEmail">Email</label>
+        <div class="controls">
+        <input type="email" id="inputEmail2" name="email" class="span4" placeholder="Email" value="<%- email %>" required>
+        </div>
+        </div>
+        <div class="control-group">
+        <label class="control-label" for="inputPassword">Password</label>
+        <div class="controls">
+        <input type="password" id="inputPassword2" class="span4" name="password" placeholder="Password" value="<%- password %>" required>
+        </div>
+        </div>
+
+        <div class="control-group">
+        <div class="controls">
+        <input type="submit" class="btn" value="Log In">
+        </div>
+        </div>
+        </form>
+        </div>
+        </script><script id="logged-in-template" type="text/template">
+        
+        </script>
+        <div class="container">
+            <div id="login_region"></div>
+            <div id="add_group"></div>
+            <div id="group_layout"></div>
+        </div><script type="text/javascript" src="js/underscore-min.js">
+</script><script type="text/javascript" src="js/jquery-2.0.0.min.js">
+</script><script type="text/javascript" src="js/json2.js">
+</script><script type="text/javascript" src="js/backbone-min.js">
+</script><script type="text/javascript" src="js/backbone-forms.min.js">
+</script><script type="text/javascript" src="js/backbone-forms-list.min.js">
+</script><script type="text/javascript" src="js/backbone-forms-bootstrap.js">
+</script><script type="text/javascript" src="js/backbone-marionette.min.js">
+</script><script type="text/javascript" src="js/bootstrap.min.js">
+</script><script type="text/javascript" src="js/marionnette-demo.js">
+</script>
+    </body>
+</html>

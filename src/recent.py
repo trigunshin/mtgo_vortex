@@ -175,3 +175,8 @@ reports = (get_report(data_seq, sort_field) for data_seq, sort_field in product(
 
 files = (prepare_report_files(cur) for cur in reports)
 subj = _get_email_subject()
+mail(gmail_user='magic.itch@gmail.com', gmail_pwd='CH1kK3Nz',
+    to=['trigunshin@gmail.com',
+ 'micahmbg@gmail.com',
+ 'kbriscoe@gmail.com'
+ ], subject=subj, text='If a report file is missing it most likely had no data. (usually a pack report)', reports=files)
